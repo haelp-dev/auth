@@ -1,5 +1,6 @@
 {
 	"name": "@haelp/auth",
+	"private": false,
 	"version": "1.0.0",
 	"description": "",
 	"main": "dist/index.js",
@@ -25,8 +26,8 @@
 	},
 	"licenses": [
 		{
-			"type": "ISC",
-			"url": "https://opensource.org/licenses/ISC"
+			"type": "MIT",
+			"url": "https://opensource.org/licenses/MIT"
 		}
 	],
 	"repository": {
