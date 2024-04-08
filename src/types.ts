@@ -1,3 +1,4 @@
+export { JWTUser } from './utils/token';
 export interface User {
   id: string;
   email: string;
@@ -5,5 +6,6 @@ export interface User {
   name: string;
   pfp: string;
 }
+
 
 export type PasswordUser = User & { password: string };

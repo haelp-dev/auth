@@ -1,9 +1,8 @@
 import jwt from "jsonwebtoken";
-import { parse } from "cookie";
 import { DatabaseAdapter, type DatabaseAdapterOptions } from "./database";
 import { PasswordUser, User } from "./types";
 import { sha256 } from "./utils";
-import { verifyToken } from "./utils/token";
+import { generateToken, verifyToken } from "./utils/token";
 import { ObjectId } from "mongodb";
 
 export interface AuthOptions {
@@ -30,7 +29,9 @@ export class Auth {
     this.domain = options.domain;
   }
 
-  async createUser(newUser: Omit<PasswordUser, "id">): Promise<User> {
+  async createUser(
+    newUser: Omit<PasswordUser, "id">
+  ): Promise<{ jwt: string; user: User }> {
     const user = await this.db.query<User>({
       collection: "users",
       query: { email: newUser.email },
@@ -52,10 +53,16 @@ export class Auth {
     };
     delete res.password;
 
-    return res;
+    return {
+      jwt: this.generateJWT(res),
+      user: res,
+    };
   }
 
-  async authenticateUser(identifier: string, password: string): Promise<User> {
+  async authenticateUser(
+    identifier: string,
+    password: string
+  ): Promise<{ jwt: string; user: User }> {
     const user = (
       await this.db.query<PasswordUser>({
         collection: "users",
@@ -73,10 +80,16 @@ export class Auth {
     const res: User & { password?: string } = { ...user };
     delete res.password;
 
-    return res;
+    return {
+      jwt: this.generateJWT(res),
+      user: res,
+    };
   }
 
-  async updateUser(id: string, update: Partial<Omit<PasswordUser, "id">>): Promise<User> {
+  async updateUser(
+    id: string,
+    update: Partial<Omit<PasswordUser, "id">>
+  ): Promise<{ jwt: string; user: User }> {
     if ("id" in update) delete update.id;
     const user = await this.db.query<User>({
       collection: "users",
@@ -92,7 +105,10 @@ export class Auth {
     const res: User & { password?: string } = { ...user[0], ...update };
     delete res.password;
 
-    return res;
+    return {
+      jwt: this.generateJWT(res),
+      user: res,
+    };
   }
 
   async deleteUser(id: string): Promise<boolean> {
@@ -108,42 +124,25 @@ export class Auth {
     return await this.db.remove("users", { id });
   }
 
-  async readRequest(req: Request): Promise<User | null> {
-    const cookies = parse(req.headers.get("cookie") || "");
-
-    if (!cookies.token || typeof cookies.token !== "string") {
-      return null;
-    }
-
+  async getUser(jwt: string): Promise<User> {
     try {
-      const tokenUser = await verifyToken(this.jwt.secret, cookies[this.jwt.cookie]);
+      const tokenUser = await verifyToken(this.jwt.secret, jwt);
       const user = await this.db.query<User>({
         collection: "users",
-        query: { id: new ObjectId(tokenUser.id) },
+        query: { id: new ObjectId(tokenUser.sub) },
       });
 
       if (user.length === 0) {
-        return null;
+        throw new Error("User not found");
       }
 
       return user[0];
     } catch {
-      return null;
+      throw new Error("Invalid token");
     }
   }
 
-  async writeResponse(res: Response, user: User | null): Promise<void> {
-    if (user) {
-      const token = jwt.sign({ id: user.id }, this.jwt.secret);
-      res.headers.set(
-        "Set-Cookie",
-        `${this.jwt.cookie}=${token}; Path=/; Domain=${this.domain}; HttpOnly; Secure; SameSite=Strict`
-      );
-    } else {
-      res.headers.set(
-        "Set-Cookie",
-        `${this.jwt.cookie}=; Path=/; Domain=${this.domain}; HttpOnly; Secure; SameSite=Strict; Max-Age=0`
-      );
-    }
+  private generateJWT(user: User): string {
+    return generateToken(this.jwt.secret, user);
   }
 }

@@ -1,10 +1,14 @@
 import jwt from "jsonwebtoken";
 import { User } from "../types";
 
-export type JWTUser = Pick<User, 'id'>;
+export interface JWTUser {
+  sub: string;
+  iat: number;
+}
+
 
 export const generateToken = (key: string, user: User): string => {
-	const payload: JWTUser = { id: user.id };
+	const payload: JWTUser = { sub: user.id, iat: Date.now()};
 	return jwt.sign(payload, key);
 }
 

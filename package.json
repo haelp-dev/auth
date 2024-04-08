@@ -16,10 +16,8 @@
 	"author": "haelp",
 	"license": "ISC",
 	"devDependencies": {
-		"@types/cookie": "^0.6.0",
 		"@types/jsonwebtoken": "^9.0.6",
 		"@types/node": "^20.12.5",
-		"cookie": "^0.6.0",
 		"jsonwebtoken": "^9.0.2",
 		"mongodb": "^6.5.0",
 		"typescript": "^5.4.4"
