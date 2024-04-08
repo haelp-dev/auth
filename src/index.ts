@@ -59,6 +59,15 @@ export class Auth {
     };
   }
 
+	async checkIdentifier(identifier: string): Promise<boolean> {
+		const user = await this.db.query<User>({
+			collection: "users",
+			query: { $or: [{ email: identifier }, { username: identifier }] },
+		});
+
+		return user.length > 0;
+	}
+
   async authenticateUser(
     identifier: string,
     password: string
