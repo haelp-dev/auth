@@ -16,8 +16,8 @@ export interface AuthOptions {
 
 export class Auth {
   private db: DatabaseAdapter;
-  private jwt: { cookie: string; secret: string };
-  private domain: string;
+  jwt: { cookie: string; secret: string };
+  domain: string;
   constructor(options: AuthOptions) {
     this.db = new DatabaseAdapter(options.database);
 
