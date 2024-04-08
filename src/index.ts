@@ -34,7 +34,7 @@ export class Auth {
   ): Promise<{ jwt: string; user: User }> {
     const user = await this.db.query<User>({
       collection: "users",
-      query: { email: newUser.email },
+      query: {$or: [{ email: newUser.email }, { username: newUser.username }]}
     });
     if (user.length > 0) {
       throw new Error("User already exists");
