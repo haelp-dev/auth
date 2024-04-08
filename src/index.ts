@@ -74,7 +74,7 @@ export class Auth {
     )[0];
 
     if (!user) {
-      throw new Error("User not found");
+      throw new Error("Invalid credentials");
     }
 
     const res: User & { password?: string } = { ...user };
