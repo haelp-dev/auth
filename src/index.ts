@@ -145,4 +145,8 @@ export class Auth {
   private generateJWT(user: User): string {
     return generateToken(this.jwt.secret, user);
   }
+
+  getCookieString(jwt: string): string {
+    return `${this.jwt.cookie}=${jwt}; Domain=${this.domain}; Path=/; HttpOnly; SameSite=Strict`;
+  }
 }
