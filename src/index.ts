@@ -150,3 +150,5 @@ export class Auth {
     return `${this.jwt.cookie}=${jwt}; Domain=${this.domain}; Path=/; HttpOnly; SameSite=Strict`;
   }
 }
+
+export { type DatabaseAdapterOptions, type User };
