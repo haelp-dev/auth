@@ -34,7 +34,7 @@ export class Auth {
   ): Promise<{ jwt: string; user: User }> {
     const user = await this.db.query<User>({
       collection: "users",
-      query: {$or: [{ email: newUser.email }, { username: newUser.username }]}
+      query: { $or: [{ email: newUser.email }, { username: newUser.username }] },
     });
     if (user.length > 0) {
       throw new Error("User already exists");
@@ -55,18 +55,18 @@ export class Auth {
 
     return {
       jwt: this.generateJWT(res),
-      user: res,
+      user: this.removeObjectId(res),
     };
   }
 
-	async checkIdentifier(identifier: string): Promise<boolean> {
-		const user = await this.db.query<User>({
-			collection: "users",
-			query: { $or: [{ email: identifier }, { username: identifier }] },
-		});
+  async checkIdentifier(identifier: string): Promise<boolean> {
+    const user = await this.db.query<User>({
+      collection: "users",
+      query: { $or: [{ email: identifier }, { username: identifier }] },
+    });
 
-		return user.length > 0;
-	}
+    return user.length > 0;
+  }
 
   async authenticateUser(
     identifier: string,
@@ -91,7 +91,7 @@ export class Auth {
 
     return {
       jwt: this.generateJWT(res),
-      user: res,
+      user: this.removeObjectId(res),
     };
   }
 
@@ -116,7 +116,7 @@ export class Auth {
 
     return {
       jwt: this.generateJWT(res),
-      user: res,
+      user: this.removeObjectId(res),
     };
   }
 
@@ -145,10 +145,14 @@ export class Auth {
         throw new Error("User not found");
       }
 
-      return user[0];
+      return this.removeObjectId(user[0]);
     } catch {
       throw new Error("Invalid token");
     }
+  }
+
+  private removeObjectId(user: User) {
+    return { ...user, id: user.id.toString() };
   }
 
   private generateJWT(user: User): string {
