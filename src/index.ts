@@ -138,7 +138,7 @@ export class Auth {
       const tokenUser = await verifyToken(this.jwt.secret, jwt);
       const user = await this.db.query<MongoUser>({
         collection: "users",
-        query: { id: new ObjectId(tokenUser.sub) },
+        query: { _id: new ObjectId(tokenUser.sub) },
       });
 
       if (user.length === 0) {
