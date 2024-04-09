@@ -152,7 +152,12 @@ export class Auth {
   }
 
   private removeObjectId(user: User) {
-    return { ...user, id: user.id.toString() };
+    // @ts-expect-error
+    user.id = user._id.toString();
+    // @ts-expect-error
+    delete user._id;
+
+		return user;
   }
 
   private generateJWT(user: User): string {
