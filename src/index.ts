@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import { DatabaseAdapter, type DatabaseAdapterOptions } from "./database";
-import { PasswordUser, User } from "./types";
+import { MongoUser, PasswordUser, User } from "./types";
 import { sha256 } from "./utils";
 import { generateToken, verifyToken } from "./utils/token";
 import { ObjectId } from "mongodb";
@@ -32,7 +32,7 @@ export class Auth {
   async createUser(
     newUser: Omit<PasswordUser, "id">
   ): Promise<{ jwt: string; user: User }> {
-    const user = await this.db.query<User>({
+    const user = await this.db.query<MongoUser>({
       collection: "users",
       query: { $or: [{ email: newUser.email }, { username: newUser.username }] },
     });
@@ -47,20 +47,20 @@ export class Auth {
       password: pwHash,
     });
 
-    const res: User & { password?: string } = {
+    const res: User & { password?: string } = this.removeObjectId({
       ...newUser,
-      id: insertionRes.insertedId.toString(),
-    };
+      _id: insertionRes.insertedId,
+    });
     delete res.password;
 
     return {
       jwt: this.generateJWT(res),
-      user: this.removeObjectId(res),
+      user: res,
     };
   }
 
   async checkIdentifier(identifier: string): Promise<boolean> {
-    const user = await this.db.query<User>({
+    const user = await this.db.query<MongoUser>({
       collection: "users",
       query: { $or: [{ email: identifier }, { username: identifier }] },
     });
@@ -73,7 +73,7 @@ export class Auth {
     password: string
   ): Promise<{ jwt: string; user: User }> {
     const user = (
-      await this.db.query<PasswordUser>({
+      await this.db.query<MongoUser & {password: string}>({
         collection: "users",
         query: {
           $or: [{ email: identifier }, { username: identifier }],
@@ -86,12 +86,12 @@ export class Auth {
       throw new Error("Invalid credentials");
     }
 
-    const res: User & { password?: string } = { ...user };
+    const res: User & { password?: string } = this.removeObjectId({ ...user });
     delete res.password;
 
     return {
       jwt: this.generateJWT(res),
-      user: this.removeObjectId(res),
+      user: res,
     };
   }
 
@@ -100,7 +100,7 @@ export class Auth {
     update: Partial<Omit<PasswordUser, "id">>
   ): Promise<{ jwt: string; user: User }> {
     if ("id" in update) delete update.id;
-    const user = await this.db.query<User>({
+    const user = await this.db.query<MongoUser>({
       collection: "users",
       query: { id },
     });
@@ -111,17 +111,17 @@ export class Auth {
 
     await this.db.update("users", { id }, { $set: update });
 
-    const res: User & { password?: string } = { ...user[0], ...update };
+    const res: User & { password?: string } = this.removeObjectId({ ...user[0], ...update });
     delete res.password;
 
     return {
       jwt: this.generateJWT(res),
-      user: this.removeObjectId(res),
+      user: res,
     };
   }
 
   async deleteUser(id: string): Promise<boolean> {
-    const user = await this.db.query<User>({
+    const user = await this.db.query<MongoUser>({
       collection: "users",
       query: { id },
     });
@@ -136,7 +136,7 @@ export class Auth {
   async getUser(jwt: string): Promise<User> {
     try {
       const tokenUser = await verifyToken(this.jwt.secret, jwt);
-      const user = await this.db.query<User>({
+      const user = await this.db.query<MongoUser>({
         collection: "users",
         query: { id: new ObjectId(tokenUser.sub) },
       });
@@ -151,12 +151,12 @@ export class Auth {
     }
   }
 
-  private removeObjectId(user: User) {
+  private removeObjectId(user: MongoUser): User {
     // @ts-expect-error
     user.id = user._id.toString();
     // @ts-expect-error
-    delete user._id;
-
+		delete user._id;
+		// @ts-expect-error
 		return user;
   }
 

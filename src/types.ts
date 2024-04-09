@@ -1,4 +1,6 @@
-export { JWTUser } from './utils/token';
+import { ObjectId } from "mongodb";
+
+export { JWTUser } from "./utils/token";
 export interface User {
   id: string;
   email: string;
@@ -7,5 +9,6 @@ export interface User {
   pfp: string;
 }
 
+export type MongoUser = Omit<User, "id"> & { _id: ObjectId };
 
 export type PasswordUser = User & { password: string };
